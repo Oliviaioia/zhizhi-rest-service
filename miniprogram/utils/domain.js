@@ -4,6 +4,45 @@
     {id:'s2',name:'临溪服务区',road:'G60 沪昆高速 · 杭州方向',km:65,minutes:52,score:91,green:74,parking:18,charging:3,quiet:42,temp:26,humidity:60,updated:Date.now(),source:'演示工作人员',slots:5,tag:'亲子友好 · 风雨连廊'},
     {id:'s3',name:'云栖服务区',road:'G60 沪昆高速 · 杭州方向',km:102,minutes:83,score:88,green:68,parking:5,charging:1,quiet:44,temp:24,humidity:58,updated:Date.now(),source:'演示用户反馈',slots:2,tag:'山间歇脚 · 温暖补给'}
   ];
+  const routeTemplates={
+    '上海>杭州':{road:'G60 沪昆高速',totalKm:178,stations:[
+      ['fengjing','枫泾服务区',58,46,90,26,10,5,'沪浙交界 · 适合首次短休'],
+      ['jiaxing','嘉兴服务区',101,78,94,34,18,7,'综合补给 · 新能源友好'],
+      ['changan','长安服务区',148,112,91,22,12,5,'临近杭州 · 餐饮补给']
+    ]},
+    '杭州>宁波':{road:'G92 杭州湾环线高速',totalKm:156,stations:[
+      ['shaoxing','绍兴服务区',55,44,93,30,14,6,'短休用餐 · 司机关怀'],
+      ['yuyao','余姚服务区',119,91,90,24,16,4,'补能整备 · 临近宁波']
+    ]},
+    '杭州>金华':{road:'G60 沪昆高速',totalKm:176,stations:[
+      ['xiaoshan','萧山服务区',34,30,89,25,10,4,'离杭首站 · 补水检查'],
+      ['zhuji','诸暨服务区',87,68,95,36,16,7,'司机休息 · 餐饮补给'],
+      ['jinhua','金华服务区',151,116,93,31,20,6,'亲子休憩 · 地方餐食']
+    ]},
+    '杭州>衢州':{road:'G60 沪昆高速',totalKm:229,stations:[
+      ['xiaoshan','萧山服务区',34,30,89,25,10,4,'离杭首站 · 补水检查'],
+      ['zhuji','诸暨服务区',87,68,95,36,16,7,'司机休息 · 餐饮补给'],
+      ['lanxi','兰溪服务区',164,123,96,38,18,8,'司机之家 · 淋浴洗衣'],
+      ['quzhou','衢州服务区',211,158,91,27,14,5,'到达前整备 · 综合补给']
+    ]},
+    '杭州>温州':{road:'S26 诸永高速 / G15 沈海高速',totalKm:305,stations:[
+      ['zhuji','诸暨服务区',82,64,94,35,16,7,'长途首休 · 餐饮补给'],
+      ['dongyang','东阳服务区',142,108,96,40,68,9,'司机之家 · 集中补能'],
+      ['tiantai','天台服务区',214,159,92,29,18,6,'山区路段前休整'],
+      ['qingjiang','清江服务区',278,207,90,24,14,5,'临近温州 · 到达前整备']
+    ]},
+    '杭州>南京':{road:'G25 长深高速',totalKm:280,stations:[
+      ['taihu','太湖服务区',82,64,93,32,18,6,'湖州段补给 · 充分短休'],
+      ['changxing','长兴服务区',121,93,90,25,12,5,'浙苏交界前检查'],
+      ['yixing','宜兴服务区',178,133,92,30,16,6,'跨省休整 · 餐饮补能'],
+      ['lishui','溧水服务区',248,185,89,22,12,4,'抵达南京前整备']
+    ]},
+    '杭州>台州':{road:'G1522 常台高速',totalKm:235,stations:[
+      ['shengzhou','嵊州服务区',105,80,92,28,14,5,'山路前休整 · 热餐'],
+      ['xinchang','新昌服务区',147,111,94,31,18,6,'山区补能 · 充分休息'],
+      ['tiantai','天台服务区',203,151,91,26,16,5,'到达前短休 · 地方补给']
+    ]}
+  };
   const services=[{id:'sleep',name:'睡眠舱',price:25,unit:'30分钟',icon:'休'},{id:'shower',name:'温暖淋浴',price:15,unit:'20分钟',icon:'淋'},{id:'family',name:'母婴室',price:0,unit:'30分钟',icon:'亲'},{id:'parking',name:'货车车位',price:0,unit:'2小时',icon:'P'}];
   const extraServices=[
     {id:'laundry',name:'洗衣代取送',group:'司机服务',wait:25,icon:'洗',desc:'洗衣完成后本地提醒，演示不连接真实服务台'},
@@ -54,7 +93,10 @@
   function toggleGuard(state,key){if(!['vehicle','child'].includes(key))throw Error('守护类型无效');state.guards[key]=!state.guards[key];return state.guards[key];}
   function greenAction(state,key,now=Date.now()){const catalog={cup:{name:'自带水杯',points:5},plate:{name:'光盘行动',points:8},green:{name:'绿电休息',points:10},walk:{name:'步行舒展',points:3}};const item=catalog[key];if(!item)throw Error('低碳行为无效');const day=new Date(now).toISOString().slice(0,10);if(state.greenActions.some(a=>a.key===key&&a.day===day))throw Error('该行为今天已经记录');const record={id:id('GA'),key,day,name:item.name,points:item.points,created:now};state.greenActions.unshift(record);state.points+=item.points;return record;}
   function carbon(kwh,green){if(!Number.isFinite(kwh)||kwh<0||!Number.isFinite(green)||green<0||green>100)throw Error('碳核算输入无效');const baseline=kwh*0.5306,actual=baseline*(1-green/100);return {baseline,actual,saved:baseline-actual};}
-  function confidence(s,now=Date.now()){if(now-s.updated>15*60000)return '状态可能变化，请现场确认';return s.source==='演示用户反馈'?'待核实':s.source==='演示工作人员'?'工作人员确认':'设备数据';}
-  function plan(input){if(!(input.origin||'').trim()||!(input.destination||'').trim())throw Error('请填写起点与终点');if(input.origin.trim()===input.destination.trim())throw Error('起点与终点不能相同');const selected=stations.filter(s=>!input.avoidBusy||s.parking>=10);return input.quiet?selected.slice().sort((a,b)=>b.score-a.score):selected;}
-  const api={stations,services,extraServices,facilities,initial,restore,reserve,cancel,reschedule,complete,ticket,progress,redeem,takeQueue,cancelQueue,requestService,progressService,toggleGuard,greenAction,carbon,confidence,plan};if(typeof module!=='undefined')module.exports=api;else root.Zhizhi=api;
+  function confidence(s,now=Date.now()){if(s.routeReference)return '路线参考数据';if(now-s.updated>15*60000)return '状态可能变化，请现场确认';return s.source==='演示用户反馈'?'待核实':s.source==='演示工作人员'?'工作人员确认':'设备数据';}
+  function normalizeCity(value){return String(value||'').trim().replace(/\s+/g,'').replace(/^(浙江省|上海市|江苏省)/,'').replace(/(市|城区)$/,'');}
+  function routeStation(raw,road,direction){const [id,name,km,minutes,score,parking,charging,slots,tag]=raw;return {id:'route-'+id,name,road:`${road} · ${direction}方向`,km,minutes,score,parking,charging,slots,tag,green:72,quiet:42,temp:25,humidity:58,updated:Date.now(),source:'路线规划演示',routeReference:true,accessible:true,busy:parking<24};}
+  function fallbackRoute(origin,destination){let seed=0;for(const c of origin+'>'+destination)seed=(seed*31+c.charCodeAt(0))>>>0;const totalKm=160+seed%241,count=totalKm>300?3:2,road='待接入地图导航 · 路线估算';const result=[];for(let i=1;i<=count;i++){const km=Math.round(totalKm*i/(count+1)),score=86+(seed+i*7)%10;result.push({id:`route-est-${seed}-${i}`,name:`途中候选休息点 ${i}`,road,km,minutes:Math.round(km/1.28),score,parking:18+(seed+i*5)%19,charging:4+(seed+i*3)%13,slots:2+(seed+i)%6,tag:i===1?'建议首次休息 · 需导航核验':'备用停靠 · 需导航核验',green:68,quiet:44,temp:25,humidity:58,updated:Date.now(),source:'路线规划演示',routeReference:true,accessible:true,busy:false});}return {road,totalKm,stations:result,recognized:false};}
+  function plan(input){const origin=normalizeCity(input.origin),destination=normalizeCity(input.destination);if(!origin||!destination)throw Error('请填写起点与终点');if(origin===destination)throw Error('起点与终点不能相同');const direct=routeTemplates[`${origin}>${destination}`],reverse=routeTemplates[`${destination}>${origin}`];let route;if(direct){route={...direct,stations:direct.stations.map(s=>routeStation(s,direct.road,destination)),recognized:true};}else if(reverse){route={...reverse,stations:reverse.stations.slice().reverse().map(s=>{const station=routeStation(s,reverse.road,destination);station.km=Math.max(1,reverse.totalKm-station.km);station.minutes=Math.round(station.km/1.28);return station;}),recognized:true};}else route=fallbackRoute(origin,destination);let selected=route.stations.slice();if(input.avoidBusy){const filtered=selected.filter(s=>!s.busy);if(filtered.length)selected=filtered;}if(input.accessible){const filtered=selected.filter(s=>s.accessible);if(filtered.length)selected=filtered;}const recommended=input.quiet?selected.reduce((best,s)=>!best||s.score>best.score?s:best,null):selected[0];selected=selected.map(s=>({...s,recommended:s.id===recommended?.id}));return {origin,destination,road:route.road,totalKm:route.totalKm,recognized:route.recognized,stations:selected,dataMode:route.recognized?'常用路线参考库':'个性化里程估算',note:route.recognized?'服务区名称按常用高速走廊配置；里程、时长和余量为规划演示。':'暂未收录该城市组合；候选点为差异化估算，不代表实际服务区名称。'};}
+  const api={stations,routeTemplates,services,extraServices,facilities,initial,restore,reserve,cancel,reschedule,complete,ticket,progress,redeem,takeQueue,cancelQueue,requestService,progressService,toggleGuard,greenAction,carbon,confidence,plan};if(typeof module!=='undefined')module.exports=api;else root.Zhizhi=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
