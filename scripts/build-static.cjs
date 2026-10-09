@@ -9,6 +9,17 @@ fs.rmSync(output, { recursive: true, force: true });
 fs.cpSync(source, output, { recursive: true });
 fs.copyFileSync(path.join(root, 'shared', 'domain.js'), path.join(output, 'domain.js'));
 
+const mobileSource = path.join(root, 'mobile-web');
+const mobileOutput = path.join(output, 'mobile-web');
+fs.cpSync(mobileSource, mobileOutput, {
+  recursive: true,
+  filter: (entry) => !entry.endsWith('.log') && !entry.includes(`${path.sep}app${path.sep}assets`)
+});
+const mobileStylePath = path.join(mobileOutput, 'app', 'style.css');
+const mobileStyle = fs.readFileSync(mobileStylePath, 'utf8')
+  .replaceAll("url('./assets/", "url('../../assets/");
+fs.writeFileSync(mobileStylePath, mobileStyle, 'utf8');
+
 const indexPath = path.join(output, 'index.html');
 const index = fs.readFileSync(indexPath, 'utf8')
   .replaceAll('/web/style.css', './style.css')
